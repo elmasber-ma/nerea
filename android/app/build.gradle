@@ -47,6 +47,13 @@ android {
             resConfigs "es", "en"
         }
     }
+
+    packaging {
+        jniLibs {
+            // Reportero de crashes de Gecko (solo se usa al morir el motor).
+            excludes += ["**/libminidump_analyzer.so", "**/libcrashhelper.so"]
+        }
+    }
 }
 
 dependencies {
