@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["cdylib", "staticlib"]
 
 [dependencies]
 flutter_rust_bridge = "=2.12.0"
@@ -54,6 +54,6 @@ unexpected_cfgs = { level = "warn", check-cfg = ['cfg(frb_expand)'] }
 # Nerea: dieta de tamaño (límite Play 200 MB con Gecko ~144 MB).
 [profile.release]
 opt-level = "z"
-lto = true
+lto = "thin"
 codegen-units = 1
 strip = true

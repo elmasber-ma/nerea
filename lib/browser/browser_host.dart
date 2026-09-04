@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import 'browser_cookies.dart';
 import 'browser_tab.dart';
 import 'browser_tabs.dart';
 import 'browser_webview.dart';
-import 'gecko_tab_controller.dart';
 
 /// Browser completo (barra + WebViews) montado como overlay global en
 /// app.dart. Al usar `Visibility(maintainState: true)` los WebViews siguen
@@ -33,7 +33,7 @@ class _BrowserWebViewsHostState extends State<BrowserWebViewsHost>
   bool _settingsOpen = false;
   bool _historyOpen = false;
   String _proxyScheme = 'PROXY';
-  List<HistorialItem>? _historyItems;
+  List<WebHistoryItem>? _historyItems;
   bool _historyLoading = false;
 
   @override
@@ -103,9 +103,9 @@ class _BrowserWebViewsHostState extends State<BrowserWebViewsHost>
     try {
       final tabs = BrowserTabs.instance;
       final c = tabs.controllerOf(tabs.active.id);
-      final h = await c?.historial() ?? const <HistorialItem>[];
+      final h = await c?.getCopyBackForwardList();
       setState(() {
-        _historyItems = h;
+        _historyItems = h?.list;
         _historyLoading = false;
       });
     } catch (e) {
@@ -135,23 +135,18 @@ class _BrowserWebViewsHostState extends State<BrowserWebViewsHost>
                 Column(children: [
                   _bar(tabs, active),
                   Expanded(
-                    // Gecko vago: las vistas del motor solo se montan con el
-                    // browser abierto; al arrancar la app no se inicializa
-                    // nada del motor (misma UI, sin costo de arranque).
-                    child: open
-                        ? Stack(
-                            children: [
-                              for (final t in tabs.tabs)
-                                Visibility(
-                                  key: ValueKey(t.id),
-                                  visible: t.id == active.id,
-                                  maintainState: true,
-                                  child: BrowserWebview(
-                                      key: ValueKey(t.id), tabs: tabs, tab: t),
-                                ),
-                            ],
-                          )
-                        : const SizedBox(),
+                    child: Stack(
+                      children: [
+                        for (final t in tabs.tabs)
+                          Visibility(
+                            key: ValueKey(t.id),
+                            visible: t.id == active.id,
+                            maintainState: true,
+                            child: BrowserWebview(
+                                key: ValueKey(t.id), tabs: tabs, tab: t),
+                          ),
+                      ],
+                    ),
                   ),
                 ]),
                 if (_tabsOpen) _tabsPanel(tabs),
@@ -379,13 +374,13 @@ class _BrowserWebViewsHostState extends State<BrowserWebViewsHost>
               title: const Text('Borrar historial'),
               onTap: () async {
                 final c = tabs.controllerOf(tabs.active.id);
-                await c?.limpiarHistorial();
+                await c?.clearHistory();
               },
             ),
             ListTile(
               leading: const Icon(Icons.cleaning_services),
               title: const Text('Borrar caché'),
-              onTap: () => GeckoTabController.limpiarCache(),
+              onTap: () => InAppWebViewController.clearAllCache(),
             ),
           ]),
         ),
@@ -426,11 +421,11 @@ class _BrowserWebViewsHostState extends State<BrowserWebViewsHost>
                         children: [
                           for (final item in _historyItems!)
                             ListTile(
-                              title: Text(item.titulo ?? item.url.toString()),
+                              title: Text(item.title ?? item.url.toString()),
                               subtitle: Text(item.url.toString()),
                               onTap: () async {
                                 final c = tabs.controllerOf(tabs.active.id);
-                                await c?.irA(item);
+                                await c?.goTo(historyItem: item);
                                 setState(() => _historyOpen = false);
                               },
                             ),

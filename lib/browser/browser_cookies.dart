@@ -1,29 +1,24 @@
-/// Almacén global de cookies del browser sobre GeckoView: misma API que
-/// antes para que la UI no cambie. GeckoView no expone lectura/escritura
-/// fina de cookies por API pública; el borrado total sí va al motor
-/// (limpia cookies + caché + datos de sitio).
-import 'gecko_tab_controller.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
-class Cookie {
-  Cookie({required this.name, required this.value});
-
-  final String name;
-  final String value;
-}
-
+/// Almacén global de cookies del browser: envuelve el CookieManager del
+/// plugin para que el resto de la app no dependa de tipos concretos más
+/// de lo necesario. Útil para sesión persistente entre pestañas y para
+/// inspección/limpieza desde UI futura.
 class CookieStore {
   CookieStore._();
   static final CookieStore instance = CookieStore._();
 
-  Future<List<Cookie>> forUrl(String url) async => const [];
+  Future<List<Cookie>> forUrl(String url) =>
+      CookieManager.instance().getCookies(url: WebUri(url));
 
-  Future<void> set(String url, String name, String value) async {}
+  Future<void> set(String url, String name, String value) =>
+      CookieManager.instance()
+          .setCookie(url: WebUri(url), name: name, value: value);
 
-  /// Borra TODAS las cookies (y datos de sitio) del motor. Devuelve si pudo.
+  /// Borra TODAS las cookies manejadas por el WebView. Devuelve si pudo.
   Future<bool> clearAll() async {
     try {
-      await GeckoTabController.limpiarCache();
-      return true;
+      return await CookieManager.instance().deleteAllCookies();
     } catch (_) {
       return false;
     }
@@ -33,8 +28,10 @@ class CookieStore {
   Future<String> dump(String url) async {
     try {
       final list = await forUrl(url);
-      if (list.isEmpty) return '(sin cookies visibles por API)';
-      return list.map((c) => '${c.name}=${c.value.length}B').join('\n');
+      if (list.isEmpty) return '(sin cookies)';
+      return list
+          .map((c) => '${c.name}=${c.value.length}B')
+          .join('\n');
     } catch (e) {
       return 'error: $e';
     }

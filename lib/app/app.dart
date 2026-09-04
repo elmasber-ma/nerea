@@ -123,7 +123,8 @@ class _HomePageState extends State<HomePage> {
   }
 
   void _openWeb(BuildContext context) {
-    // El botón Web abre el browser Gecko como overlay global.
+    // Lua quedó suelto (código intacto en lib/lua/, sin invocar): el botón
+    // Web ahora abre el browser inappwebview como overlay global.
     BrowserTabs.instance.openBrowser();
   }
 
