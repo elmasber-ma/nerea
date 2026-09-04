@@ -44,7 +44,7 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             shrinkResources true
             // Solo castellano + inglés (las demás lenguas de las libs sobran).
-            resConfigs "es", "en"
+            resourceConfigurations += ["es", "en"]
         }
     }
 
