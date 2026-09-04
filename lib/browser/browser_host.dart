@@ -421,7 +421,7 @@ class _BrowserWebViewsHostState extends State<BrowserWebViewsHost>
                         children: [
                           for (final item in _historyItems!)
                             ListTile(
-                              title: Text(item.title ?? item.url.toString()),
+                              title: Text(item.titulo ?? item.url.toString()),
                               subtitle: Text(item.url.toString()),
                               onTap: () async {
                                 final c = tabs.controllerOf(tabs.active.id);
