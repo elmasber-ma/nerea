@@ -5,7 +5,7 @@ import '../chat/screens/chat_list_screen.dart';
 import '../colab_cli/colab_dialog.dart';
 import '../media/media_player.dart';
 import '../screens/ai_screen.dart';
-import '../screens/downloads_test_screen.dart';
+
 import '../browser/browser_host.dart';
 import '../browser/browser_tabs.dart';
 import '../screens/torrent_screen.dart';
