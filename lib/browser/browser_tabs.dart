@@ -1,18 +1,18 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import 'browser_cookies.dart';
 import 'browser_tab.dart';
+import 'gecko_tab_controller.dart';
 
 /// Gestor de pestañas del browser: lista, activa, alta/baja con tope por
-/// memoria y registro de controladores vivos del plugin. Notifica a la
+/// memoria y registro de controladores Gecko vivos. Notifica a la
 /// pantalla para redibujar chips e IndexedStack.
 ///
 /// El toggle global de JavaScript también vive acá: al cambiarlo se aplica
 /// en vivo a todos los controladores registrados y queda como valor inicial
 /// de las pestañas nuevas.
 ///
-/// Es un singleton: las pestañas (y el host global de WebViews) sobreviven a
+/// Es un singleton: las pestañas (y el host global de vistas) sobreviven a
 /// la navegación dentro de la app. `openBrowser`/`closeBrowser` controlan el
 /// overlay global montado en app.dart.
 class BrowserTabs extends ChangeNotifier {
@@ -24,12 +24,12 @@ class BrowserTabs extends ChangeNotifier {
   static const maxTabs = 8;
 
   final List<BrowserTab> tabs = [];
-  final Map<int, InAppWebViewController> _controllers = {};
+  final Map<int, GeckoTabController> _controllers = {};
   int activeIndex = 0;
   bool jsEnabled = true;
   int _idSeq = 0;
 
-  // Ajustes del navegador (preferencias vivas, aplicadas a cada WebView).
+  // Ajustes del navegador (preferencias vivas, aplicadas a cada pestaña).
   bool thirdPartyCookies = true;
   bool sharedCookies = false;
   bool blockNetworkImage = false;
@@ -60,14 +60,25 @@ class BrowserTabs extends ChangeNotifier {
 
   int _nextId() => _idSeq++;
 
+  GeckoAjustes ajustesActuales() => GeckoAjustes(
+        js: jsEnabled,
+        cookiesTerceros: thirdPartyCookies,
+        geo: geolocation,
+        seguro: safeBrowsing,
+        incognito: incognito,
+      );
+
   /// Registra el controlador que [BrowserWebview] crea para esa pestaña;
   /// aplica de una vez todos los ajustes actuales.
-  void registerController(int tabId, InAppWebViewController c) {
+  Future<void> registerController(int tabId, GeckoTabController c) async {
     _controllers[tabId] = c;
-    applyTo(c);
+    await c.listo(ajustesActuales());
   }
 
-  void forgetController(int tabId) => _controllers.remove(tabId);
+  Future<void> forgetController(int tabId) async {
+    final c = _controllers.remove(tabId);
+    await c?.cerrar();
+  }
 
   void activate(int index) {
     if (index < 0 || index >= tabs.length) return;
@@ -85,10 +96,13 @@ class BrowserTabs extends ChangeNotifier {
 
   /// Cierra SOLO la pestaña en [index] (sin cascada). Si era la última,
   /// crea una "Nueva pestaña" fresca para que siempre haya una.
-  void closeAt(int index) {
+  Future<void> closeAt(int index) async {
     if (index < 0 || index >= tabs.length) return;
     final id = tabs[index].id;
-    _controllers.remove(id);
+    final c = _controllers.remove(id);
+    try {
+      await c?.cerrar();
+    } catch (_) {}
     tabs[index].dispose();
     tabs.removeAt(index);
     if (tabs.isEmpty) {
@@ -114,7 +128,7 @@ class BrowserTabs extends ChangeNotifier {
     notifyListeners();
   }
 
-  InAppWebViewController? controllerOf(int tabId) => _controllers[tabId];
+  GeckoTabController? controllerOf(int tabId) => _controllers[tabId];
 
   /// Carga [input] en la pestaña dada; agrega https:// si falta esquema.
   Future<void> loadUrl(int tabId, String input) async {
@@ -124,44 +138,34 @@ class BrowserTabs extends ChangeNotifier {
       u = 'https://$u';
     }
     updateUrl(tabId, u);
-    await controllerOf(tabId)?.loadUrl(urlRequest: URLRequest(url: WebUri(u)));
+    await controllerOf(tabId)?.cargar(u);
   }
 
   Future<void> reload(int tabId) async {
-    await controllerOf(tabId)?.reload();
+    await controllerOf(tabId)?.recargar();
   }
 
   Future<bool> goBack(int tabId) async {
     final c = controllerOf(tabId);
-    if (c == null || !(await c.canGoBack())) return false;
-    await c.goBack();
+    if (c == null) return false;
+    await c.atras();
     return true;
   }
 
   Future<bool> goForward(int tabId) async {
     final c = controllerOf(tabId);
-    if (c == null || !(await c.canGoForward())) return false;
-    await c.goForward();
+    if (c == null) return false;
+    await c.adelante();
     return true;
   }
 
-  /// Configuración completa que se aplica a cada WebView (nuevos y vivos).
-  InAppWebViewSettings currentWebViewSettings() => InAppWebViewSettings(
-        javaScriptEnabled: jsEnabled,
-        thirdPartyCookiesEnabled: thirdPartyCookies,
-        sharedCookiesEnabled: sharedCookies,
-        blockNetworkImage: blockNetworkImage,
-        geolocationEnabled: geolocation,
-        safeBrowsingEnabled: safeBrowsing,
-        incognito: incognito,
-        transparentBackground: true,
-        supportZoom: true,
-      );
+  /// Configuración completa que se aplica a cada pestaña (nuevas y vivas).
+  GeckoAjustes currentWebViewSettings() => ajustesActuales();
 
   /// Aplica todos los ajustes actuales a un controlador concreto.
-  Future<void> applyTo(InAppWebViewController c) async {
+  Future<void> applyTo(GeckoTabController c) async {
     try {
-      await c.setSettings(settings: currentWebViewSettings());
+      await c.aplicarAjustes(ajustesActuales());
     } catch (_) {}
   }
 
@@ -171,7 +175,7 @@ class BrowserTabs extends ChangeNotifier {
     }
   }
 
-  /// Cambia el JavaScript global y lo aplica en vivo a cada WebView vivo.
+  /// Cambia el JavaScript global y lo aplica en vivo a cada pestaña viva.
   Future<void> setJs(bool enabled) async {
     jsEnabled = enabled;
     await _applyAll();
@@ -211,17 +215,18 @@ class BrowserTabs extends ChangeNotifier {
   Future<void> setIncognito(bool v) async {
     incognito = v;
     notifyListeners();
-    // Las WebViews ya vivas no cambian incógnito en caliente: limpiamos su
-    // rastro y las nuevas respetan el modo vía initialSettings.
+    // Las pestañas ya vivas no cambian a privadas en caliente: limpiamos su
+    // rastro y las nuevas respetan el modo al abrir la sesión.
     if (v) {
       try {
-        await InAppWebViewController.clearAllCache();
+        await GeckoTabController.limpiarCache();
       } catch (_) {}
       await CookieStore.instance.clearAll();
     }
   }
 
-  /// Aplica (o quita) un proxy genérico a TODOS los WebViews de la app.
+  /// Aplica (o quita) un proxy genérico. GeckoView no expone API de proxy:
+  /// se guarda la preferencia y la UI queda igual que antes.
   /// [scheme] es 'PROXY' (HTTP) o 'SOCKS'.
   Future<bool> setProxy(bool enabled, String hostPort, String scheme) async {
     proxyEnabled = enabled;
@@ -229,18 +234,9 @@ class BrowserTabs extends ChangeNotifier {
     proxyScheme = scheme;
     notifyListeners();
     try {
-      final pc = ProxyController.instance();
-      if (enabled && proxyHostPort.isNotEmpty) {
-        await pc.setProxyOverride(
-          settings: ProxySettings(
-            proxyRules: [ProxyRule(url: '$scheme $proxyHostPort')],
-          ),
-        );
-      } else {
-        await pc.clearProxyOverride();
-      }
-      return true;
-    } catch (e) {
+      return await ProxyNerea.instance
+          .aplicar(enabled, proxyHostPort, proxyScheme);
+    } catch (_) {
       return false;
     }
   }

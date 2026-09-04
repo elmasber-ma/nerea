@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import 'browser_cookies.dart';
 import 'browser_tab.dart';
 import 'browser_tabs.dart';
 import 'browser_webview.dart';
+import 'gecko_tab_controller.dart';
 
 /// Browser completo (barra + WebViews) montado como overlay global en
 /// app.dart. Al usar `Visibility(maintainState: true)` los WebViews siguen
@@ -33,7 +33,7 @@ class _BrowserWebViewsHostState extends State<BrowserWebViewsHost>
   bool _settingsOpen = false;
   bool _historyOpen = false;
   String _proxyScheme = 'PROXY';
-  List<WebHistoryItem>? _historyItems;
+  List<HistorialItem>? _historyItems;
   bool _historyLoading = false;
 
   @override
@@ -103,9 +103,9 @@ class _BrowserWebViewsHostState extends State<BrowserWebViewsHost>
     try {
       final tabs = BrowserTabs.instance;
       final c = tabs.controllerOf(tabs.active.id);
-      final h = await c?.getCopyBackForwardList();
+      final h = await c?.historial() ?? const <HistorialItem>[];
       setState(() {
-        _historyItems = h?.list;
+        _historyItems = h;
         _historyLoading = false;
       });
     } catch (e) {
@@ -374,13 +374,13 @@ class _BrowserWebViewsHostState extends State<BrowserWebViewsHost>
               title: const Text('Borrar historial'),
               onTap: () async {
                 final c = tabs.controllerOf(tabs.active.id);
-                await c?.clearHistory();
+                await c?.limpiarHistorial();
               },
             ),
             ListTile(
               leading: const Icon(Icons.cleaning_services),
               title: const Text('Borrar caché'),
-              onTap: () => InAppWebViewController.clearAllCache(),
+              onTap: () => GeckoTabController.limpiarCache(),
             ),
           ]),
         ),
@@ -425,7 +425,7 @@ class _BrowserWebViewsHostState extends State<BrowserWebViewsHost>
                               subtitle: Text(item.url.toString()),
                               onTap: () async {
                                 final c = tabs.controllerOf(tabs.active.id);
-                                await c?.goTo(historyItem: item);
+                                await c?.irA(item);
                                 setState(() => _historyOpen = false);
                               },
                             ),

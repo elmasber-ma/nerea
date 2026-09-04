@@ -22,4 +22,13 @@ plugins {
     id "org.jetbrains.kotlin.android" version "2.2.20" apply false
 }
 
+dependencyResolutionManagement {
+    repositories {
+        google()
+        mavenCentral()
+        // GeckoView (motor web de Nerea)
+        maven("https://maven.mozilla.org/maven2/")
+    }
+}
+
 include ":app"

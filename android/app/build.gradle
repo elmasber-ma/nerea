@@ -47,6 +47,8 @@ android {
 
 dependencies {
     coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'
+    // Motor web Gecko (solo arm64, verificado contra compileSdk 36)
+    implementation("org.mozilla.geckoview:geckoview-arm64-v8a:140.0.20250707120347")
 }
 
 flutter {

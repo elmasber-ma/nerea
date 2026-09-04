@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter/services.dart';
 
 import '../services/browser_downloads.dart';
 import 'browser_tab.dart';
 import 'browser_tabs.dart';
+import 'gecko_tab_controller.dart';
 
-/// Envuelve UN InAppWebView (una pestaña): registra su controlador en el
+/// Envuelve UNA vista Gecko (una pestaña): registra su controlador en el
 /// gestor, propaga progreso/url/título y deriva descargas al gestor global.
+/// Misma UI que antes (barra de progreso fina abajo).
 class BrowserWebview extends StatefulWidget {
   const BrowserWebview({
     super.key,
@@ -29,26 +31,27 @@ class _BrowserWebviewState extends State<BrowserWebview> {
     return Stack(children: [
       Column(children: [
         Expanded(
-          child: InAppWebView(
-            initialUrlRequest: URLRequest(url: WebUri(widget.tab.url)),
-            initialSettings: widget.tabs.currentWebViewSettings(),
-            onWebViewCreated: (c) =>
-                widget.tabs.registerController(widget.tab.id, c),
-            onProgressChanged: (_, p) {
-              if (mounted) setState(() => _progress = p / 100);
+          child: AndroidView(
+            viewType: 'nerea/gecko',
+            creationParams: {
+              'tabId': widget.tab.id,
+              'url': widget.tab.url,
             },
-            onLoadStop: (_, url) {
-              if (url != null) {
-                widget.tabs.updateUrl(widget.tab.id, url.toString());
-              }
-            },
-            onTitleChanged: (_, title) =>
-                widget.tabs.rename(widget.tab.id, title ?? ''),
-            onDownloadStartRequest: (_, req) {
-              DownloadManager.instance.start(
-                req.url.toString(),
-                suggestedName: req.suggestedFilename,
-              );
+            creationParamsCodec: const StandardMessageCodec(),
+            onPlatformViewCreated: (_) {
+              final c = GeckoTabController(widget.tab.id);
+              c.onProgreso = (p) {
+                if (mounted) setState(() => _progress = p);
+              };
+              c.onUrl = (u) => widget.tabs.updateUrl(widget.tab.id, u);
+              c.onTitulo = (t) => widget.tabs.rename(widget.tab.id, t);
+              c.onDescarga = (u, nombre) {
+                DownloadManager.instance.start(
+                  u,
+                  suggestedName: nombre.isEmpty ? null : nombre,
+                );
+              };
+              widget.tabs.registerController(widget.tab.id, c);
             },
           ),
         ),
@@ -56,5 +59,11 @@ class _BrowserWebviewState extends State<BrowserWebview> {
           LinearProgressIndicator(value: _progress, minHeight: 2),
       ]),
     ]);
+  }
+
+  @override
+  void dispose() {
+    widget.tabs.forgetController(widget.tab.id);
+    super.dispose();
   }
 }
