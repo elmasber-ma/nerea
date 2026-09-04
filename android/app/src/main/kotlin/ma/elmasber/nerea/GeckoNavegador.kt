@@ -199,7 +199,7 @@ object GeckoNavegador {
                     "tab" to tabId,
                     "tipo" to "descarga",
                     "url" to (respuesta.uri ?: ""),
-                    "nombre" to (respuesta.filename ?: ""),
+                    "nombre" to "",
                 )
             )
         }
