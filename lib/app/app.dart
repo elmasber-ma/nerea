@@ -11,7 +11,6 @@ import '../browser/browser_tabs.dart';
 import '../screens/torrent_screen.dart';
 import '../screens/filosoia_screen.dart';
 import '../agents/agent_manager.dart';
-import '../screens/gpu_test_screen.dart';
 import '../screens/hf_test_screen.dart';
 import '../screens/ipfs_test_screen.dart';
 import '../screens/kem_test_screen.dart';
@@ -28,8 +27,6 @@ import '../screens/pkarr_test_screen.dart';
 import '../screens/dht_busca_screen.dart';
 import '../screens/iroh_chat_screen.dart';
 import '../screens/iroh_test_screen.dart';
-import '../screens/tor_test_screen.dart';
-import '../screens/unarc_test_screen.dart';
 import '../toolsec/toolsec_dialog.dart';
 import 'widgets/bottom_bar.dart';
 import 'widgets/radial_menu.dart';
@@ -159,8 +156,6 @@ class _HomePageState extends State<HomePage> {
               _openTest(context, 'KEM post-cuántico', const KemTestScreen());
             case 'hf':
               _openTest(context, 'HuggingFace', const HfTestScreen());
-            case 'gpu':
-              _openTest(context, 'GPU Compute (WGSL)', const GpuTestScreen());
             case 'dl':
               _openTest(context, 'Descargas', const DownloadsTestScreen());
             case 'bt':
@@ -174,8 +169,6 @@ class _HomePageState extends State<HomePage> {
               _openTest(context, 'Voto anónimo BLSAG', const RingVoteTestScreen());
             case 'ip':
               _openTest(context, 'IPFS', const IpfsTestScreen());
-            case 'ua':
-              _openTest(context, 'Unarc · RAR/7z/ZIP', const UnarcTestScreen());
             case 'ub':
               _openTest(context, 'Nostr Busca', const NostrBuscaScreen());
             case 'nn':
@@ -183,8 +176,6 @@ class _HomePageState extends State<HomePage> {
                   const NostrnScreen());
             case 'up':
               _openTest(context, 'Pkarr v8', const PkarrTestScreen());
-            case 'tr':
-              _openTest(context, 'Tor embebido (arti)', const TorTestScreen());
             case 'dh':
               _openTest(
                   context, 'DHT Busca · spider Mainline', const DhtBuscaScreen());

@@ -4,9 +4,6 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
-import '../services/gpu/gpu_shader_lab.dart';
-import 'lua_sandbox.dart';
-
 /// Herramientas de agente (estilo FilosoIA tools/) con permisos.
 /// El manager chequea el permiso ANTES de ejecutar; acá va la lógica pura.
 
@@ -109,34 +106,6 @@ final List<ToolDef> AGENT_TOOLS = [
     },
     AgentPermission.readFiles,
   ),
-  ToolDef(
-    'lua_gui',
-    'Ejecuta código Lua del motor pr_app que construye una página con la API '
-        "gui_* (gui_heading, gui_text, gui_button, gui_input...). "
-        'El usuario luego puede VER esa GUI generada.',
-    {
-      'type': 'object',
-      'properties': {
-        'code': {'type': 'string', 'description': 'script Lua completo'}
-      },
-      'required': ['code'],
-    },
-    AgentPermission.controlGui,
-  ),
-  ToolDef(
-    'gpu_run',
-    'Compila y ejecuta un shader WGSL sobre N elementos en la GPU '
-        '(WebGPU/Vulkan). Retorna los primeros valores y el tiempo.',
-    {
-      'type': 'object',
-      'properties': {
-        'wgsl': {'type': 'string', 'description': 'código WGSL con @compute'},
-        'n': {'type': 'integer', 'description': 'cantidad de elementos'},
-      },
-      'required': ['wgsl', 'n'],
-    },
-    AgentPermission.gpuRun,
-  ),
 ];
 
 ToolDef? toolByName(String n) {
@@ -223,31 +192,9 @@ Future<String> executeTool(String name, Map<String, dynamic> args) async {
         return _clip(text, 15000);
 
       case 'lua_gui':
-        final page = LuaSandbox.instance.run(args['code'] ?? '');
-        if (page == null) {
-          return 'ERROR: el script Lua no compiló o no definió `page`';
-        }
-        LuaSandbox.instance.markDirty();
-        return 'OK GUI generada: "${page.title}" con ${page.body.length} widgets. '
-            'Avisale al usuario que toque "Ver GUI" en tu tarjeta.';
-
+        return 'ERROR: herramienta eliminada en Nerea (sin Lua)';
       case 'gpu_run':
-        final lab = GpuShaderLab();
-        final r = await lab.run(
-          code: args['wgsl'] ?? '',
-          input: List.generate(
-              ((args['n'] ?? 64) as num).toInt().clamp(8, 1 << 20),
-              (i) => i.toDouble()),
-          dispatchX: ((((args['n'] ?? 64) as num).toInt()) + 63) ~/ 64,
-          dispatchY: 1,
-          dispatchZ: 1,
-          paramX: 2.0,
-          paramY: 0,
-          paramZ: 0,
-        );
-        if (!r.ok) return 'ERROR GPU: ${r.error}';
-        return 'OK GPU (${r.elapsedMs.toStringAsFixed(2)} ms): '
-            '${r.data.take(8).map((v) => v.toStringAsFixed(3)).join('  ')}';
+        return 'ERROR: herramienta eliminada en Nerea (sin GPU compute)';
 
       default:
         return 'ERROR: herramienta desconocida $name';

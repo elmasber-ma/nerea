@@ -35,11 +35,6 @@ abstract final class RadialCatalog {
         icon: Icons.hub_rounded,
         color: Colors.lightBlueAccent),
     RadialMenuItem(
-        key: 'gpu',
-        label: 'GPU',
-        icon: Icons.memory_rounded,
-        color: Colors.pinkAccent),
-    RadialMenuItem(
         key: 'dl',
         label: 'Descargas',
         icon: Icons.download_rounded,

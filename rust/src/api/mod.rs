@@ -1,5 +1,4 @@
 pub mod dht_busca;
-pub mod gpu;
 pub mod hf;
 pub mod iroh_p2p;
 pub mod kem;
@@ -15,6 +14,4 @@ pub mod nostringer;
 pub mod pkarr;
 pub mod shamir;
 pub mod simple;
-pub mod tor;
 pub mod torrent;
-pub mod unarc;
