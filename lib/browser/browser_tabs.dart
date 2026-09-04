@@ -75,9 +75,11 @@ class BrowserTabs extends ChangeNotifier {
     await c.listo(ajustesActuales());
   }
 
-  Future<void> forgetController(int tabId) async {
-    final c = _controllers.remove(tabId);
-    await c?.cerrar();
+  /// Olvida el controlador de la vista que se desmontó SIN cerrar la
+  /// sesión Gecko: al reabrir el browser la pestaña retoma donde estaba
+  /// (mismo comportamiento persistente que antes).
+  void forgetController(int tabId) {
+    _controllers.remove(tabId);
   }
 
   void activate(int index) {

@@ -135,18 +135,23 @@ class _BrowserWebViewsHostState extends State<BrowserWebViewsHost>
                 Column(children: [
                   _bar(tabs, active),
                   Expanded(
-                    child: Stack(
-                      children: [
-                        for (final t in tabs.tabs)
-                          Visibility(
-                            key: ValueKey(t.id),
-                            visible: t.id == active.id,
-                            maintainState: true,
-                            child: BrowserWebview(
-                                key: ValueKey(t.id), tabs: tabs, tab: t),
-                          ),
-                      ],
-                    ),
+                    // Gecko vago: las vistas del motor solo se montan con el
+                    // browser abierto; al arrancar la app no se inicializa
+                    // nada del motor (misma UI, sin costo de arranque).
+                    child: open
+                        ? Stack(
+                            children: [
+                              for (final t in tabs.tabs)
+                                Visibility(
+                                  key: ValueKey(t.id),
+                                  visible: t.id == active.id,
+                                  maintainState: true,
+                                  child: BrowserWebview(
+                                      key: ValueKey(t.id), tabs: tabs, tab: t),
+                                ),
+                            ],
+                          )
+                        : const SizedBox(),
                   ),
                 ]),
                 if (_tabsOpen) _tabsPanel(tabs),
