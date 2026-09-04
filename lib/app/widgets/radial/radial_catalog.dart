@@ -35,11 +35,6 @@ abstract final class RadialCatalog {
         icon: Icons.hub_rounded,
         color: Colors.lightBlueAccent),
     RadialMenuItem(
-        key: 'dl',
-        label: 'Descargas',
-        icon: Icons.download_rounded,
-        color: Colors.tealAccent),
-    RadialMenuItem(
         key: 'bt',
         label: 'Torrent',
         icon: Icons.bolt_rounded,

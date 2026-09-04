@@ -156,8 +156,6 @@ class _HomePageState extends State<HomePage> {
               _openTest(context, 'KEM post-cuántico', const KemTestScreen());
             case 'hf':
               _openTest(context, 'HuggingFace', const HfTestScreen());
-            case 'dl':
-              _openTest(context, 'Descargas', const DownloadsTestScreen());
             case 'bt':
               _openTest(context, 'Torrents (rqbit)', const TorrentScreen());
             case 'ag':
