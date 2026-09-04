@@ -14,7 +14,8 @@ import org.mozilla.geckoview.GeckoRuntimeSettings
 import org.mozilla.geckoview.GeckoSession
 import org.mozilla.geckoview.GeckoSessionSettings
 import org.mozilla.geckoview.GeckoView
-import org.mozilla.geckoview.WebExtension
+import org.mozilla.geckoview.StorageController
+import org.mozilla.geckoview.WebResponse
 
 // Puente Flutter <-> GeckoView para el browser de Nerea.
 //
@@ -192,7 +193,7 @@ object GeckoNavegador {
             }
         }
 
-        override fun onExternalResponse(session: GeckoSession, respuesta: GeckoSession.WebResponseInfo) {
+        override fun onExternalResponse(session: GeckoSession, respuesta: WebResponse) {
             emitir(
                 mapOf(
                     "tab" to tabId,
@@ -205,7 +206,7 @@ object GeckoNavegador {
     }
 
     private fun historial(tabId: Int) = object : GeckoSession.HistoryDelegate {
-        override fun onHistoryStateChange(session: GeckoSession, lista: GeckoSession.HistoryList) {
+        override fun onHistoryStateChange(session: GeckoSession, lista: GeckoSession.HistoryDelegate.HistoryList) {
             // El listado para la UI sale de `visitas` (ver método historial()).
         }
 
@@ -224,7 +225,7 @@ object GeckoNavegador {
         ): GeckoResult<Int>? {
             val tipo = solicitud.permission
             val r = GeckoResult<Int>()
-            if (tipo == GeckoSession.PermissionDelegate.ContentPermission.PERMISSION_GEOLOCATION && !geo) {
+            if (tipo == GeckoSession.PermissionDelegate.PERMISSION_GEOLOCATION && !geo) {
                 r.complete(GeckoSession.PermissionDelegate.ContentPermission.VALUE_DENY)
             } else {
                 r.complete(GeckoSession.PermissionDelegate.ContentPermission.VALUE_ALLOW)
@@ -304,7 +305,7 @@ object GeckoNavegador {
                     if (r == null) {
                         resp.success(false)
                     } else {
-                        r.storageController.clearData()
+                        r.storageController.clearData(StorageController.ClearFlags.ALL)
                         visitas.clear()
                         resp.success(true)
                     }
